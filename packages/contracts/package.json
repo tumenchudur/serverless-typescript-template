@@ -1,0 +1,19 @@
+{
+  "name": "@template/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared database schemas, validation schemas, and TypeScript types",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@template/ts-configs": "workspace:*",
+    "typescript": "5.8.2"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "extends": "@template/ts-configs/base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "paths": {
+      "@template/contracts": ["../../packages/contracts/src"],
+      "@template/libs": ["../../packages/libs/src"]
+    }
+  },
+  "include": ["src/**/*", "serverless.ts"],
+  "exclude": ["node_modules", "dist", ".serverless"]
+}

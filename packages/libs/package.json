@@ -1,0 +1,33 @@
+{
+  "name": "@template/libs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Core utilities and shared libraries",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.696.0",
+    "@aws-sdk/client-lambda": "^3.696.0",
+    "@aws-sdk/client-s3": "^3.696.0",
+    "@aws-sdk/client-ssm": "^3.696.0",
+    "@aws-sdk/lib-dynamodb": "^3.696.0",
+    "@middy/core": "^7.0.2",
+    "@middy/http-json-body-parser": "^7.0.2",
+    "axios": "^1.7.9",
+    "drizzle-orm": "^0.38.3",
+    "jsonwebtoken": "^9.0.3",
+    "postgres": "^3.4.5",
+    "winston": "^3.18.3",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@template/contracts": "workspace:*",
+    "@template/ts-configs": "workspace:*",
+    "@types/aws-lambda": "^8.10.145",
+    "@types/jsonwebtoken": "^9.0.7",
+    "typescript": "5.8.2"
+  }
+}

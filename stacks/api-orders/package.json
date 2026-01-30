@@ -1,0 +1,34 @@
+{
+  "name": "api-orders",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Order management API with DynamoDB",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "dev": "serverless offline --stage dev",
+    "deploy:dev": "serverless deploy --stage dev",
+    "deploy:prod": "serverless deploy --stage prod"
+  },
+  "dependencies": {
+    "@template/contracts": "workspace:*",
+    "@template/libs": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@serverless/typescript": "^4.23.0",
+    "@template/ts-configs": "workspace:*",
+    "@types/aws-lambda": "^8.10.145",
+    "@vitest/coverage-v8": "^2.1.8",
+    "serverless": "^4.27.0",
+    "serverless-esbuild": "^1.56.1",
+    "serverless-offline": "^14.4.0",
+    "serverless-prune-plugin": "^2.1.0",
+    "typescript": "5.8.2",
+    "vitest": "^2.1.8"
+  }
+}
