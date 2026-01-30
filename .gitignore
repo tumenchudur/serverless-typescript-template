@@ -38,3 +38,4 @@ logs/
 # Temporary files
 *.tmp
 .cache/
+.turbo

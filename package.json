@@ -1,8 +1,24 @@
 {
-  "name": "serverless-ts-template",
+  "name": "serverless-typescript-template",
   "version": "1.0.0",
   "private": true,
   "description": "Production-ready serverless TypeScript monorepo template with DynamoDB and PostgreSQL support",
+  "author": "tumenchudur",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tumenchudur/serverless-typescript-template.git"
+  },
+  "keywords": [
+    "serverless",
+    "typescript",
+    "aws-lambda",
+    "monorepo",
+    "turborepo",
+    "drizzle-orm",
+    "dynamodb",
+    "postgresql"
+  ],
   "engines": {
     "node": ">=22.0.0",
     "pnpm": ">=10.17.1"

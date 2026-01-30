@@ -45,7 +45,7 @@ export function set(name: string, value: string, ttlSeconds: number): void {
   logger.debug('SSM cache set', {
     name,
     ttlSeconds,
-    expiresAt: new Date(expires).toISOString(),
+    expiresAt: new Date(expires).toISOString()
   });
 }
 

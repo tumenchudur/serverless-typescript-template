@@ -34,22 +34,13 @@ const [newUser] = await db
   .returning();
 
 // Read - Single record
-const [user] = await db
-  .select()
-  .from(users)
-  .where(eq(users.id, userId))
-  .limit(1);
+const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
 
 // Read - Multiple with conditions
 const activeUsers = await db
   .select()
   .from(users)
-  .where(
-    and(
-      eq(users.status, 'ACTIVE'),
-      eq(users.emailVerified, true)
-    )
-  )
+  .where(and(eq(users.status, 'ACTIVE'), eq(users.emailVerified, true)))
   .orderBy(desc(users.createdAt));
 
 // Update
@@ -69,12 +60,7 @@ await db.delete(users).where(eq(users.id, userId));
 const searchResults = await db
   .select()
   .from(users)
-  .where(
-    or(
-      like(users.firstName, '%John%'),
-      like(users.lastName, '%John%')
-    )
-  );
+  .where(or(like(users.firstName, '%John%'), like(users.lastName, '%John%')));
 ```
 
 ### Transactions
@@ -85,10 +71,7 @@ import { users, orders } from '@template/contracts';
 
 const result = await db.transaction(async (tx) => {
   // Create user
-  const [user] = await tx
-    .insert(users)
-    .values(userData)
-    .returning();
+  const [user] = await tx.insert(users).values(userData).returning();
 
   // Create order for user
   const [order] = await tx
@@ -524,9 +507,7 @@ import { CustomError } from '@template/libs';
 
 export async function fetchUserData(userId: string) {
   try {
-    const userData = await get<UserData>(
-      `https://api.example.com/users/${userId}`
-    );
+    const userData = await get<UserData>(`https://api.example.com/users/${userId}`);
     return userData;
   } catch (error) {
     // Errors are automatically converted to CustomError with proper status codes
@@ -571,11 +552,7 @@ Enhanced SSM client with batch operations, caching, and CRUD operations.
 ### Basic Parameter Operations
 
 ```typescript
-import {
-  getSSMParameter,
-  putSSMParameter,
-  deleteSSMParameter
-} from '@template/libs';
+import { getSSMParameter, putSSMParameter, deleteSSMParameter } from '@template/libs';
 
 // Get a single parameter (backward compatible)
 const dbPassword = await getSSMParameter('/prod/db/password', true);
@@ -607,25 +584,17 @@ await deleteSSMParameter('/prod/old-config');
 import { getSSMParameters, deleteSSMParameters } from '@template/libs';
 
 // Retrieve multiple parameters at once (auto-chunks at 10 items)
-const params = await getSSMParameters([
-  '/prod/db/host',
-  '/prod/db/port',
-  '/prod/db/name',
-  '/prod/db/username',
-  '/prod/api-key',
-  '/prod/jwt-secret'
-], { withDecryption: true });
+const params = await getSSMParameters(
+  ['/prod/db/host', '/prod/db/port', '/prod/db/name', '/prod/db/username', '/prod/api-key', '/prod/jwt-secret'],
+  { withDecryption: true }
+);
 
 // Access values from the Map
 const dbHost = params.get('/prod/db/host');
 const dbPort = params.get('/prod/db/port');
 
 // Delete multiple parameters
-await deleteSSMParameters([
-  '/prod/temp-config-1',
-  '/prod/temp-config-2',
-  '/prod/old-feature-flag'
-]);
+await deleteSSMParameters(['/prod/temp-config-1', '/prod/temp-config-2', '/prod/old-feature-flag']);
 ```
 
 ### Parameter Caching
@@ -703,10 +672,12 @@ const allParams = await listSSMParameters({
 // List with filters
 const appParams = await listSSMParameters({
   maxResults: 50,
-  filters: [{
-    key: 'Name',
-    values: ['/prod/app/']
-  }]
+  filters: [
+    {
+      key: 'Name',
+      values: ['/prod/app/']
+    }
+  ]
 });
 
 // Access metadata
@@ -730,12 +701,9 @@ const JWT_SECRET = await getSSMParameter('/prod/jwt-secret', {
 });
 
 // 2. Batch load configuration at startup
-const config = await getSSMParameters([
-  '/prod/db/host',
-  '/prod/db/port',
-  '/prod/redis/host',
-  '/prod/s3/bucket'
-], { cacheTTL: 300 });
+const config = await getSSMParameters(['/prod/db/host', '/prod/db/port', '/prod/redis/host', '/prod/s3/bucket'], {
+  cacheTTL: 300
+});
 
 // 3. Clear cache after updates
 await putSSMParameter('/prod/feature-flag', 'true');
@@ -758,10 +726,7 @@ Enhanced Lambda client with async invocation, DryRun validation, retry logic, an
 import { invokeLambda } from '@template/libs';
 
 // Synchronous invocation (RequestResponse)
-const result = await invokeLambda<ProcessResult>(
-  'data-processor-function',
-  { userId: '123', action: 'process' }
-);
+const result = await invokeLambda<ProcessResult>('data-processor-function', { userId: '123', action: 'process' });
 
 console.log(result); // { success: true, processedCount: 42 }
 ```
@@ -843,11 +808,7 @@ const result = await invokeLambda<ResultType>(
       maxRetries: 5,
       retryDelay: 2000, // 2 seconds
       exponentialBackoff: true, // 2s, 4s, 8s, 16s, 32s
-      retryableErrors: [
-        'ServiceException',
-        'TooManyRequestsException',
-        'ResourceNotReadyException'
-      ]
+      retryableErrors: ['ServiceException', 'TooManyRequestsException', 'ResourceNotReadyException']
     }
   }
 );
@@ -876,8 +837,8 @@ for (const result of results) {
 }
 
 // Separate successes and failures
-const successes = results.filter(r => r.success);
-const failures = results.filter(r => !r.success);
+const successes = results.filter((r) => r.success);
+const failures = results.filter((r) => !r.success);
 
 console.log(`Successful: ${successes.length}, Failed: ${failures.length}`);
 ```
@@ -888,10 +849,10 @@ console.log(`Successful: ${successes.length}, Failed: ${failures.length}`);
 import { invokeLambdaWithStreaming } from '@template/libs';
 
 // For large payloads or real-time data
-const streamData = await invokeLambdaWithStreaming<LargeDataset>(
-  'analytics-function',
-  { query: 'get-all-transactions', year: 2026 }
-);
+const streamData = await invokeLambdaWithStreaming<LargeDataset>('analytics-function', {
+  query: 'get-all-transactions',
+  year: 2026
+});
 
 console.log('Streamed data:', streamData);
 ```
@@ -899,12 +860,7 @@ console.log('Streamed data:', streamData);
 ### Advanced Use Cases
 
 ```typescript
-import {
-  invokeLambda,
-  invokeLambdaAsync,
-  batchInvokeLambda,
-  validateLambdaInvocation
-} from '@template/libs';
+import { invokeLambda, invokeLambdaAsync, batchInvokeLambda, validateLambdaInvocation } from '@template/libs';
 
 // 1. Chain Lambda invocations with error handling
 export async function processWorkflow(data: WorkflowData) {
@@ -932,7 +888,7 @@ export async function processWorkflow(data: WorkflowData) {
 
 // 2. Fan-out pattern with batch invocations
 export async function processBatchUsers(userIds: string[]) {
-  const requests = userIds.map(userId => ({
+  const requests = userIds.map((userId) => ({
     functionName: 'process-user',
     payload: { userId }
   }));
@@ -942,21 +898,18 @@ export async function processBatchUsers(userIds: string[]) {
   // Aggregate results
   const summary = {
     total: results.length,
-    successful: results.filter(r => r.success).length,
-    failed: results.filter(r => !r.success).length,
+    successful: results.filter((r) => r.success).length,
+    failed: results.filter((r) => !r.success).length,
     failedUsers: results
-      .filter(r => !r.success)
-      .map(r => ({ functionName: r.functionName, error: r.error?.message }))
+      .filter((r) => !r.success)
+      .map((r) => ({ functionName: r.functionName, error: r.error?.message }))
   };
 
   return summary;
 }
 
 // 3. Conditional invocation with validation
-export async function safeLambdaInvoke<T>(
-  functionName: string,
-  payload: unknown
-): Promise<T | null> {
+export async function safeLambdaInvoke<T>(functionName: string, payload: unknown): Promise<T | null> {
   // First validate
   const isValid = await validateLambdaInvocation(functionName, payload);
 
@@ -1000,7 +953,7 @@ if (canInvoke) {
 }
 
 // 3. Use batch operations for parallel processing
-const requests = items.map(item => ({
+const requests = items.map((item) => ({
   functionName: 'process-item',
   payload: { itemId: item.id }
 }));
@@ -1063,9 +1016,7 @@ const userCount = await db
 const recentUsers = await db
   .select()
   .from(users)
-  .where(
-    sql`${users.createdAt} > NOW() - INTERVAL '7 days'`
-  );
+  .where(sql`${users.createdAt} > NOW() - INTERVAL '7 days'`);
 ```
 
 ### Environment-Specific Configuration
@@ -1098,12 +1049,14 @@ export const FUNCTIONS = {
 
 1. **Use ARM64 architecture** (already configured)
 2. **Minimize dependencies**
+
    ```typescript
    // Instead of importing entire lodash
    import get from 'lodash/get';
    ```
 
 3. **Lazy load heavy dependencies**
+
    ```typescript
    let heavyLib: typeof import('heavy-lib') | null = null;
 
@@ -1181,8 +1134,7 @@ To add AWS X-Ray tracing, install and use the middleware:
 import middy from '@middy/core';
 import { captureLambdaHandler } from '@aws-lambda-powertools/tracer';
 
-export const handler = middy(baseHandler)
-  .use(captureLambdaHandler());
+export const handler = middy(baseHandler).use(captureLambdaHandler());
 ```
 
 ## Security Examples
@@ -1196,7 +1148,10 @@ export const CreateUserSchema = z.object({
   email: z.string().email().toLowerCase().trim(),
   firstName: z.string().min(1).max(100).trim(),
   lastName: z.string().min(1).max(100).trim(),
-  phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/).optional()
+  phoneNumber: z
+    .string()
+    .regex(/^\+?[1-9]\d{1,14}$/)
+    .optional()
 });
 ```
 
@@ -1219,15 +1174,10 @@ Drizzle ORM uses parameterized queries by default:
 
 ```typescript
 // Safe - parameters are escaped
-const user = await db
-  .select()
-  .from(users)
-  .where(eq(users.email, userInput));
+const user = await db.select().from(users).where(eq(users.email, userInput));
 
 // Also safe with raw SQL
-const result = await db.execute(
-  sql`SELECT * FROM users WHERE email = ${userInput}`
-);
+const result = await db.execute(sql`SELECT * FROM users WHERE email = ${userInput}`);
 ```
 
 ## Deployment Examples
@@ -1240,7 +1190,7 @@ Modify `serverless.ts`:
 const regions = ['ap-southeast-1', 'us-east-1'];
 
 // Deploy to multiple regions
-regions.forEach(region => {
+regions.forEach((region) => {
   // serverless deploy --region ${region}
 });
 ```
@@ -1272,10 +1222,7 @@ aws lambda update-alias --function-name my-function --name live --function-versi
 import { invokeLambda } from '@template/libs';
 
 export async function notifyUser(userId: string, message: string) {
-  const result = await invokeLambda<{ success: boolean }>(
-    'notification-service-sendEmail',
-    { userId, message }
-  );
+  const result = await invokeLambda<{ success: boolean }>('notification-service-sendEmail', { userId, message });
 
   return result;
 }
@@ -1320,7 +1267,7 @@ export async function withRetry<T>(
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, delayMs * Math.pow(2, attempt)));
+        await new Promise((resolve) => setTimeout(resolve, delayMs * Math.pow(2, attempt)));
       }
     }
   }
@@ -1343,7 +1290,7 @@ export function cached<T>(key: string, fn: () => Promise<T>, ttlSeconds: number 
     return Promise.resolve(cached.data as T);
   }
 
-  return fn().then(data => {
+  return fn().then((data) => {
     cache.set(key, { data, expires: Date.now() + ttlSeconds * 1000 });
     return data;
   });

@@ -6,7 +6,7 @@ import {
   invokeLambdaAsync,
   validateLambdaInvocation,
   batchInvokeLambda,
-  invokeLambdaWithStreaming,
+  invokeLambdaWithStreaming
 } from './lambda-client';
 
 vi.mock('@aws-sdk/client-lambda');
@@ -15,8 +15,8 @@ vi.mock('../logging/logger', () => ({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
-  },
+    error: vi.fn()
+  }
 }));
 
 describe('lambda-client', () => {
@@ -29,7 +29,7 @@ describe('lambda-client', () => {
       const mockResponse = { statusCode: 200, body: 'success' };
       const mockSend = vi.fn().mockResolvedValue({
         StatusCode: 200,
-        Payload: new TextEncoder().encode(JSON.stringify(mockResponse)),
+        Payload: new TextEncoder().encode(JSON.stringify(mockResponse))
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -43,7 +43,7 @@ describe('lambda-client', () => {
       const mockResponse = { data: 'test' };
       const mockSend = vi.fn().mockResolvedValue({
         StatusCode: 200,
-        Payload: new TextEncoder().encode(JSON.stringify(mockResponse)),
+        Payload: new TextEncoder().encode(JSON.stringify(mockResponse))
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -54,13 +54,17 @@ describe('lambda-client', () => {
 
     it('should handle async invocation (Event type)', async () => {
       const mockSend = vi.fn().mockResolvedValue({
-        StatusCode: 202,
+        StatusCode: 202
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
-      const result = await invokeLambda('test-function', { test: true }, {
-        invocationType: 'Event',
-      });
+      const result = await invokeLambda(
+        'test-function',
+        { test: true },
+        {
+          invocationType: 'Event'
+        }
+      );
 
       expect(result).toEqual({});
       expect(mockSend).toHaveBeenCalled();
@@ -68,13 +72,17 @@ describe('lambda-client', () => {
 
     it('should handle DryRun invocation', async () => {
       const mockSend = vi.fn().mockResolvedValue({
-        StatusCode: 204,
+        StatusCode: 204
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
-      const result = await invokeLambda('test-function', { test: true }, {
-        invocationType: 'DryRun',
-      });
+      const result = await invokeLambda(
+        'test-function',
+        { test: true },
+        {
+          invocationType: 'DryRun'
+        }
+      );
 
       expect(result).toEqual({});
       expect(mockSend).toHaveBeenCalled();
@@ -84,7 +92,7 @@ describe('lambda-client', () => {
       const mockSend = vi.fn().mockResolvedValue({
         StatusCode: 200,
         FunctionError: 'Unhandled',
-        Payload: new TextEncoder().encode(JSON.stringify({ errorMessage: 'Test error' })),
+        Payload: new TextEncoder().encode(JSON.stringify({ errorMessage: 'Test error' }))
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -93,7 +101,7 @@ describe('lambda-client', () => {
 
     it('should throw CustomError when no payload returned', async () => {
       const mockSend = vi.fn().mockResolvedValue({
-        StatusCode: 200,
+        StatusCode: 200
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -109,19 +117,23 @@ describe('lambda-client', () => {
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce({
           StatusCode: 200,
-          Payload: new TextEncoder().encode(JSON.stringify({ success: true })),
+          Payload: new TextEncoder().encode(JSON.stringify({ success: true }))
         });
 
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
-      const result = await invokeLambda('test-function', { test: true }, {
-        retryConfig: {
-          maxRetries: 2,
-          retryDelay: 10,
-          exponentialBackoff: false,
-          retryableErrors: ['ServiceException'],
-        },
-      });
+      const result = await invokeLambda(
+        'test-function',
+        { test: true },
+        {
+          retryConfig: {
+            maxRetries: 2,
+            retryDelay: 10,
+            exponentialBackoff: false,
+            retryableErrors: ['ServiceException']
+          }
+        }
+      );
 
       expect(result).toEqual({ success: true });
       expect(mockSend).toHaveBeenCalledTimes(2);
@@ -135,14 +147,18 @@ describe('lambda-client', () => {
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
       await expect(
-        invokeLambda('test-function', { test: true }, {
-          retryConfig: {
-            maxRetries: 2,
-            retryDelay: 10,
-            exponentialBackoff: false,
-            retryableErrors: ['ServiceException'],
-          },
-        })
+        invokeLambda(
+          'test-function',
+          { test: true },
+          {
+            retryConfig: {
+              maxRetries: 2,
+              retryDelay: 10,
+              exponentialBackoff: false,
+              retryableErrors: ['ServiceException']
+            }
+          }
+        )
       ).rejects.toThrow();
 
       expect(mockSend).toHaveBeenCalledTimes(1);
@@ -156,7 +172,7 @@ describe('lambda-client', () => {
         StatusCode: 200,
         Payload: new TextEncoder().encode(JSON.stringify(mockPayload)),
         LogResult: 'base64encodedlogs',
-        ExecutedVersion: '$LATEST',
+        ExecutedVersion: '$LATEST'
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -172,7 +188,7 @@ describe('lambda-client', () => {
       const mockSend = vi.fn().mockResolvedValue({
         StatusCode: 200,
         FunctionError: 'Unhandled',
-        Payload: new TextEncoder().encode(JSON.stringify({ errorMessage: 'Test error' })),
+        Payload: new TextEncoder().encode(JSON.stringify({ errorMessage: 'Test error' }))
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -185,7 +201,7 @@ describe('lambda-client', () => {
   describe('invokeLambdaAsync', () => {
     it('should invoke Lambda asynchronously', async () => {
       const mockSend = vi.fn().mockResolvedValue({
-        StatusCode: 202,
+        StatusCode: 202
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -198,7 +214,7 @@ describe('lambda-client', () => {
   describe('validateLambdaInvocation', () => {
     it('should return true for valid invocation', async () => {
       const mockSend = vi.fn().mockResolvedValue({
-        StatusCode: 204,
+        StatusCode: 204
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
@@ -220,12 +236,10 @@ describe('lambda-client', () => {
   describe('batchInvokeLambda', () => {
     it('should invoke multiple functions in parallel', async () => {
       const mockSend = vi.fn().mockImplementation((command) => {
-        const payload = JSON.parse(
-          new TextDecoder().decode(command.input.Payload)
-        );
+        const payload = JSON.parse(new TextDecoder().decode(command.input.Payload));
         return Promise.resolve({
           StatusCode: 200,
-          Payload: new TextEncoder().encode(JSON.stringify({ result: payload.id })),
+          Payload: new TextEncoder().encode(JSON.stringify({ result: payload.id }))
         });
       });
       vi.mocked(LambdaClient).prototype.send = mockSend;
@@ -233,7 +247,7 @@ describe('lambda-client', () => {
       const requests = [
         { functionName: 'function-1', payload: { id: 1 } },
         { functionName: 'function-2', payload: { id: 2 } },
-        { functionName: 'function-3', payload: { id: 3 } },
+        { functionName: 'function-3', payload: { id: 3 } }
       ];
 
       const results = await batchInvokeLambda(requests);
@@ -247,12 +261,12 @@ describe('lambda-client', () => {
         .fn()
         .mockResolvedValueOnce({
           StatusCode: 200,
-          Payload: new TextEncoder().encode(JSON.stringify({ success: true })),
+          Payload: new TextEncoder().encode(JSON.stringify({ success: true }))
         })
         .mockRejectedValueOnce(new Error('Failed'))
         .mockResolvedValueOnce({
           StatusCode: 200,
-          Payload: new TextEncoder().encode(JSON.stringify({ success: true })),
+          Payload: new TextEncoder().encode(JSON.stringify({ success: true }))
         });
 
       vi.mocked(LambdaClient).prototype.send = mockSend;
@@ -260,7 +274,7 @@ describe('lambda-client', () => {
       const requests = [
         { functionName: 'function-1', payload: {} },
         { functionName: 'function-2', payload: {} },
-        { functionName: 'function-3', payload: {} },
+        { functionName: 'function-3', payload: {} }
       ];
 
       const results = await batchInvokeLambda(requests);
@@ -292,12 +306,12 @@ describe('lambda-client', () => {
       const mockEventStream = [
         {
           PayloadChunk: {
-            Payload: new TextEncoder().encode(JSON.stringify(mockPayload)),
-          },
+            Payload: new TextEncoder().encode(JSON.stringify(mockPayload))
+          }
         },
         {
-          InvokeComplete: {},
-        },
+          InvokeComplete: {}
+        }
       ];
 
       const mockSend = vi.fn().mockResolvedValue({
@@ -306,8 +320,8 @@ describe('lambda-client', () => {
             for (const event of mockEventStream) {
               yield event;
             }
-          },
-        },
+          }
+        }
       });
 
       vi.mocked(LambdaClient).prototype.send = mockSend;
@@ -321,9 +335,9 @@ describe('lambda-client', () => {
       const mockEventStream = [
         {
           InvokeComplete: {
-            ErrorCode: 'FunctionError',
-          },
-        },
+            ErrorCode: 'FunctionError'
+          }
+        }
       ];
 
       const mockSend = vi.fn().mockResolvedValue({
@@ -332,24 +346,20 @@ describe('lambda-client', () => {
             for (const event of mockEventStream) {
               yield event;
             }
-          },
-        },
+          }
+        }
       });
 
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
-      await expect(
-        invokeLambdaWithStreaming('test-function', { test: true })
-      ).rejects.toThrow();
+      await expect(invokeLambdaWithStreaming('test-function', { test: true })).rejects.toThrow();
     });
 
     it('should throw error when no event stream returned', async () => {
       const mockSend = vi.fn().mockResolvedValue({});
       vi.mocked(LambdaClient).prototype.send = mockSend;
 
-      await expect(
-        invokeLambdaWithStreaming('test-function', { test: true })
-      ).rejects.toThrow();
+      await expect(invokeLambdaWithStreaming('test-function', { test: true })).rejects.toThrow();
     });
   });
 });

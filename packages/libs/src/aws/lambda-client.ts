@@ -2,7 +2,7 @@ import {
   LambdaClient,
   InvokeCommand,
   InvokeWithResponseStreamCommand,
-  type InvokeCommandInput,
+  type InvokeCommandInput
 } from '@aws-sdk/client-lambda';
 import { logger } from '../utils/logger';
 import { CustomError } from '../errors/custom-error';
@@ -11,7 +11,7 @@ import type {
   LambdaRetryConfig,
   LambdaInvokeResult,
   BatchInvokeRequest,
-  BatchInvokeResult,
+  BatchInvokeResult
 } from './lambda-types';
 
 const lambdaClient = new LambdaClient({ region: process.env['AWS_REGION'] || 'ap-southeast-1' });
@@ -23,17 +23,13 @@ const DEFAULT_RETRY_CONFIG: LambdaRetryConfig = {
   maxRetries: 3,
   retryDelay: 1000,
   exponentialBackoff: true,
-  retryableErrors: ['ServiceException', 'TooManyRequestsException', 'ResourceNotReadyException'],
+  retryableErrors: ['ServiceException', 'TooManyRequestsException', 'ResourceNotReadyException']
 };
 
 /**
  * Calculates the delay before the next retry attempt
  */
-function calculateRetryDelay(
-  retryCount: number,
-  baseDelay: number,
-  exponentialBackoff: boolean
-): number {
+function calculateRetryDelay(retryCount: number, baseDelay: number, exponentialBackoff: boolean): number {
   if (exponentialBackoff) {
     return baseDelay * Math.pow(2, retryCount);
   }
@@ -94,7 +90,7 @@ export async function invokeLambda<T>(
     logType = 'None',
     clientContext,
     qualifier,
-    retryConfig = DEFAULT_RETRY_CONFIG,
+    retryConfig = DEFAULT_RETRY_CONFIG
   } = options || {};
 
   let retryCount = 0;
@@ -105,7 +101,7 @@ export async function invokeLambda<T>(
         functionName,
         invocationType,
         qualifier,
-        retryCount,
+        retryCount
       });
 
       const command: InvokeCommandInput = {
@@ -114,7 +110,7 @@ export async function invokeLambda<T>(
         InvocationType: invocationType,
         LogType: logType,
         ClientContext: clientContext,
-        Qualifier: qualifier,
+        Qualifier: qualifier
       };
 
       const result = await lambdaClient.send(new InvokeCommand(command));
@@ -132,11 +128,7 @@ export async function invokeLambda<T>(
 
       // Parse response for RequestResponse invocations
       if (!result.Payload) {
-        throw new CustomError(
-          'Lambda invocation returned no payload',
-          500,
-          'LAMBDA_NO_PAYLOAD'
-        );
+        throw new CustomError('Lambda invocation returned no payload', 500, 'LAMBDA_NO_PAYLOAD');
       }
 
       const response = JSON.parse(new TextDecoder().decode(result.Payload));
@@ -145,7 +137,7 @@ export async function invokeLambda<T>(
         logger.error('Lambda function error', {
           functionName,
           functionError: result.FunctionError,
-          response,
+          response
         });
         throw new CustomError(
           `Lambda invocation failed: ${response.errorMessage || 'Unknown error'}`,
@@ -156,15 +148,13 @@ export async function invokeLambda<T>(
 
       logger.info('Lambda function invoked successfully', {
         functionName,
-        statusCode: result.StatusCode,
+        statusCode: result.StatusCode
       });
 
       return response as T;
     } catch (error) {
       // Check if we should retry
-      const shouldRetry =
-        retryCount < retryConfig.maxRetries &&
-        isRetryableError(error, retryConfig.retryableErrors);
+      const shouldRetry = retryCount < retryConfig.maxRetries && isRetryableError(error, retryConfig.retryableErrors);
 
       if (!shouldRetry) {
         if (error instanceof CustomError) {
@@ -172,25 +162,17 @@ export async function invokeLambda<T>(
         }
 
         logger.error('Error invoking Lambda', { functionName, error });
-        throw new CustomError(
-          `Failed to invoke Lambda function: ${functionName}`,
-          500,
-          'LAMBDA_INVOKE_ERROR'
-        );
+        throw new CustomError(`Failed to invoke Lambda function: ${functionName}`, 500, 'LAMBDA_INVOKE_ERROR');
       }
 
       retryCount++;
-      const delay = calculateRetryDelay(
-        retryCount - 1,
-        retryConfig.retryDelay,
-        retryConfig.exponentialBackoff
-      );
+      const delay = calculateRetryDelay(retryCount - 1, retryConfig.retryDelay, retryConfig.exponentialBackoff);
 
       logger.info('Retrying Lambda invocation', {
         functionName,
         attempt: retryCount,
         maxRetries: retryConfig.maxRetries,
-        delayMs: delay,
+        delayMs: delay
       });
 
       await sleep(delay);
@@ -223,17 +205,12 @@ export async function invokeLambdaWithDetails<T>(
   options?: LambdaInvokeOptions
 ): Promise<LambdaInvokeResult<T>> {
   try {
-    const {
-      invocationType = 'RequestResponse',
-      logType = 'Tail',
-      clientContext,
-      qualifier,
-    } = options || {};
+    const { invocationType = 'RequestResponse', logType = 'Tail', clientContext, qualifier } = options || {};
 
     logger.debug('Invoking Lambda function with details', {
       functionName,
       invocationType,
-      qualifier,
+      qualifier
     });
 
     const command: InvokeCommandInput = {
@@ -242,21 +219,19 @@ export async function invokeLambdaWithDetails<T>(
       InvocationType: invocationType,
       LogType: logType,
       ClientContext: clientContext,
-      Qualifier: qualifier,
+      Qualifier: qualifier
     };
 
     const result = await lambdaClient.send(new InvokeCommand(command));
 
-    const payloadData = result.Payload
-      ? JSON.parse(new TextDecoder().decode(result.Payload))
-      : {};
+    const payloadData = result.Payload ? JSON.parse(new TextDecoder().decode(result.Payload)) : {};
 
     return {
       payload: payloadData as T,
       statusCode: result.StatusCode,
       logResult: result.LogResult,
       executedVersion: result.ExecutedVersion,
-      functionError: result.FunctionError,
+      functionError: result.FunctionError
     };
   } catch (error) {
     logger.error('Error invoking Lambda with details', { functionName, error });
@@ -299,10 +274,7 @@ export async function invokeLambdaAsync(functionName: string, payload: unknown):
  * }
  * ```
  */
-export async function validateLambdaInvocation(
-  functionName: string,
-  payload: unknown
-): Promise<boolean> {
+export async function validateLambdaInvocation(functionName: string, payload: unknown): Promise<boolean> {
   try {
     await invokeLambda(functionName, payload, { invocationType: 'DryRun' });
     return true;
@@ -348,13 +320,13 @@ export async function batchInvokeLambda<T>(
       return {
         functionName: request.functionName,
         success: true,
-        result,
+        result
       };
     } catch (error) {
       return {
         functionName: request.functionName,
         success: false,
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: error instanceof Error ? error : new Error(String(error))
       };
     }
   });
@@ -365,7 +337,7 @@ export async function batchInvokeLambda<T>(
   logger.info('Batch Lambda invocation completed', {
     total: results.length,
     successful: successCount,
-    failed: results.length - successCount,
+    failed: results.length - successCount
   });
 
   return results;
@@ -386,26 +358,19 @@ export async function batchInvokeLambda<T>(
  * );
  * ```
  */
-export async function invokeLambdaWithStreaming<T>(
-  functionName: string,
-  payload: unknown
-): Promise<T> {
+export async function invokeLambdaWithStreaming<T>(functionName: string, payload: unknown): Promise<T> {
   try {
     logger.debug('Invoking Lambda function with streaming', { functionName });
 
     const result = await lambdaClient.send(
       new InvokeWithResponseStreamCommand({
         FunctionName: functionName,
-        Payload: JSON.stringify(payload),
+        Payload: JSON.stringify(payload)
       })
     );
 
     if (!result.EventStream) {
-      throw new CustomError(
-        'Lambda streaming invocation returned no event stream',
-        500,
-        'LAMBDA_NO_STREAM'
-      );
+      throw new CustomError('Lambda streaming invocation returned no event stream', 500, 'LAMBDA_NO_STREAM');
     }
 
     // Collect all chunks from the stream
@@ -417,7 +382,7 @@ export async function invokeLambdaWithStreaming<T>(
       if (event.InvokeComplete) {
         logger.debug('Lambda streaming completed', {
           functionName,
-          error: event.InvokeComplete.ErrorCode,
+          error: event.InvokeComplete.ErrorCode
         });
         if (event.InvokeComplete.ErrorCode) {
           throw new CustomError(

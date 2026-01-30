@@ -4,7 +4,9 @@ import { randomUUID } from 'crypto';
 
 const ORDERS_TABLE = process.env['ORDERS_TABLE'] || 'orders';
 
-export async function createOrderInDb(orderData: Omit<Order, 'orderId' | 'createdAt' | 'updatedAt'>): Promise<Order> {
+export async function createOrderInDb(
+  orderData: Omit<Order, 'orderId' | 'createdAt' | 'updatedAt' | 'status'>
+): Promise<Order> {
   const now = new Date().toISOString();
   const order: Order = {
     orderId: randomUUID(),

@@ -3,7 +3,7 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
   type AxiosError,
-  type InternalAxiosRequestConfig,
+  type InternalAxiosRequestConfig
 } from 'axios';
 import { logger } from '../utils/logger';
 import { CustomError } from '../errors/custom-error';
@@ -16,7 +16,7 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
   retries: 3,
   retryDelay: 1000,
   retryableStatuses: [408, 429, 500, 502, 503, 504],
-  exponentialBackoff: true,
+  exponentialBackoff: true
 };
 
 /**
@@ -27,11 +27,7 @@ const DEFAULT_TIMEOUT = 30000;
 /**
  * Calculates the delay before the next retry attempt
  */
-function calculateRetryDelay(
-  retryCount: number,
-  baseDelay: number,
-  exponentialBackoff: boolean
-): number {
+function calculateRetryDelay(retryCount: number, baseDelay: number, exponentialBackoff: boolean): number {
   if (exponentialBackoff) {
     return baseDelay * Math.pow(2, retryCount);
   }
@@ -74,14 +70,14 @@ export function createAxiosClient(config?: AxiosClientConfig): AxiosInstance {
     retryConfig = DEFAULT_RETRY_CONFIG,
     enableLogging = true,
     authToken,
-    axiosConfig = {},
+    axiosConfig = {}
   } = config || {};
 
   // Merge default headers with custom headers
   const defaultHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: 'application/json',
-    ...headers,
+    ...headers
   };
 
   // Add authorization header if token is provided
@@ -93,7 +89,7 @@ export function createAxiosClient(config?: AxiosClientConfig): AxiosInstance {
   const axiosDefaults: any = {
     timeout,
     headers: defaultHeaders,
-    ...axiosConfig,
+    ...axiosConfig
   };
 
   if (baseURL) {
@@ -111,7 +107,7 @@ export function createAxiosClient(config?: AxiosClientConfig): AxiosInstance {
           url: request.url,
           baseURL: request.baseURL,
           headers: request.headers,
-          params: request.params,
+          params: request.params
         });
         return request;
       },
@@ -130,7 +126,7 @@ export function createAxiosClient(config?: AxiosClientConfig): AxiosInstance {
           status: response.status,
           statusText: response.statusText,
           url: response.config.url,
-          headers: response.headers,
+          headers: response.headers
         });
       }
       return response;
@@ -147,7 +143,7 @@ export function createAxiosClient(config?: AxiosClientConfig): AxiosInstance {
           status: error.response?.status,
           statusText: error.response?.statusText,
           url: originalRequest?.url,
-          data: error.response?.data,
+          data: error.response?.data
         });
       }
 
@@ -172,7 +168,7 @@ export function createAxiosClient(config?: AxiosClientConfig): AxiosInstance {
             attempt: originalRequest._retryCount,
             maxRetries: retryConfig.retries,
             delayMs: delay,
-            url: originalRequest.url,
+            url: originalRequest.url
           });
         }
 
@@ -211,10 +207,7 @@ export const httpClient = createAxiosClient();
  * const user = await get<User>('https://api.example.com/users/1');
  * ```
  */
-export async function get<T = unknown>(
-  url: string,
-  config?: AxiosRequestConfig
-): Promise<T> {
+export async function get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
   const response = await httpClient.get<T>(url, config);
   return response.data;
 }
@@ -235,11 +228,7 @@ export async function get<T = unknown>(
  * });
  * ```
  */
-export async function post<T = unknown>(
-  url: string,
-  data?: unknown,
-  config?: AxiosRequestConfig
-): Promise<T> {
+export async function post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
   const response = await httpClient.post<T>(url, data, config);
   return response.data;
 }
@@ -259,11 +248,7 @@ export async function post<T = unknown>(
  * });
  * ```
  */
-export async function put<T = unknown>(
-  url: string,
-  data?: unknown,
-  config?: AxiosRequestConfig
-): Promise<T> {
+export async function put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
   const response = await httpClient.put<T>(url, data, config);
   return response.data;
 }
@@ -283,11 +268,7 @@ export async function put<T = unknown>(
  * });
  * ```
  */
-export async function patch<T = unknown>(
-  url: string,
-  data?: unknown,
-  config?: AxiosRequestConfig
-): Promise<T> {
+export async function patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
   const response = await httpClient.patch<T>(url, data, config);
   return response.data;
 }
@@ -304,10 +285,7 @@ export async function patch<T = unknown>(
  * await del('https://api.example.com/users/1');
  * ```
  */
-export async function del<T = unknown>(
-  url: string,
-  config?: AxiosRequestConfig
-): Promise<T> {
+export async function del<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
   const response = await httpClient.delete<T>(url, config);
   return response.data;
 }

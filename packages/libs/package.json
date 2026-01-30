@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Core utilities and shared libraries",
+  "author": "Your Name <your.email@example.com>",
+  "license": "MIT",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {

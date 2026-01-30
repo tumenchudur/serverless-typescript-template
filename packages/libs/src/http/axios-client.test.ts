@@ -9,8 +9,8 @@ vi.mock('../logging/logger', () => ({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
-  },
+    error: vi.fn()
+  }
 }));
 
 describe('axios-client', () => {
@@ -27,8 +27,8 @@ describe('axios-client', () => {
       const mockInstance = {
         interceptors: {
           request: { use: vi.fn() },
-          response: { use: vi.fn() },
-        },
+          response: { use: vi.fn() }
+        }
       };
       vi.mocked(axios.create).mockReturnValue(mockInstance as any);
 
@@ -38,8 +38,8 @@ describe('axios-client', () => {
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
+          Accept: 'application/json'
+        }
       });
       expect(mockInstance.interceptors.request.use).toHaveBeenCalled();
       expect(mockInstance.interceptors.response.use).toHaveBeenCalled();
@@ -49,8 +49,8 @@ describe('axios-client', () => {
       const mockInstance = {
         interceptors: {
           request: { use: vi.fn() },
-          response: { use: vi.fn() },
-        },
+          response: { use: vi.fn() }
+        }
       };
       vi.mocked(axios.create).mockReturnValue(mockInstance as any);
 
@@ -58,7 +58,7 @@ describe('axios-client', () => {
         baseURL: 'https://api.example.com',
         timeout: 5000,
         headers: { 'X-Custom': 'value' },
-        enableLogging: false,
+        enableLogging: false
       };
 
       createAxiosClient(config);
@@ -69,8 +69,8 @@ describe('axios-client', () => {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
-          'X-Custom': 'value',
-        },
+          'X-Custom': 'value'
+        }
       });
     });
 
@@ -78,8 +78,8 @@ describe('axios-client', () => {
       const mockInstance = {
         interceptors: {
           request: { use: vi.fn() },
-          response: { use: vi.fn() },
-        },
+          response: { use: vi.fn() }
+        }
       };
       vi.mocked(axios.create).mockReturnValue(mockInstance as any);
 
@@ -88,8 +88,8 @@ describe('axios-client', () => {
       expect(axios.create).toHaveBeenCalledWith(
         expect.objectContaining({
           headers: expect.objectContaining({
-            Authorization: 'Bearer token123',
-          }),
+            Authorization: 'Bearer token123'
+          })
         })
       );
     });
@@ -98,8 +98,8 @@ describe('axios-client', () => {
       const mockInstance = {
         interceptors: {
           request: { use: vi.fn() },
-          response: { use: vi.fn() },
-        },
+          response: { use: vi.fn() }
+        }
       };
       vi.mocked(axios.create).mockReturnValue(mockInstance as any);
 
@@ -170,9 +170,9 @@ describe('axios-client', () => {
       const mockInstance = {
         interceptors: {
           request: { use: vi.fn() },
-          response: { use: vi.fn() },
+          response: { use: vi.fn() }
         },
-        get: vi.fn(),
+        get: vi.fn()
       };
 
       vi.mocked(axios.create).mockReturnValue(mockInstance as any);
@@ -182,8 +182,8 @@ describe('axios-client', () => {
           retries: 2,
           retryDelay: 100,
           retryableStatuses: [503],
-          exponentialBackoff: false,
-        },
+          exponentialBackoff: false
+        }
       });
 
       expect(mockInstance.interceptors.response.use).toHaveBeenCalled();
@@ -193,8 +193,8 @@ describe('axios-client', () => {
       const mockInstance = {
         interceptors: {
           request: { use: vi.fn() },
-          response: { use: vi.fn() },
-        },
+          response: { use: vi.fn() }
+        }
       };
 
       vi.mocked(axios.create).mockReturnValue(mockInstance as any);
@@ -204,8 +204,8 @@ describe('axios-client', () => {
           retries: 3,
           retryDelay: 1000,
           retryableStatuses: [503],
-          exponentialBackoff: true,
-        },
+          exponentialBackoff: true
+        }
       });
 
       expect(mockInstance.interceptors.response.use).toHaveBeenCalled();
@@ -217,8 +217,8 @@ describe('axios-client', () => {
       const mockInstance = {
         interceptors: {
           request: { use: vi.fn() },
-          response: { use: vi.fn() },
-        },
+          response: { use: vi.fn() }
+        }
       };
 
       vi.mocked(axios.create).mockReturnValue(mockInstance as any);

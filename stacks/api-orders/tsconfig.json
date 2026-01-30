@@ -2,7 +2,6 @@
   "extends": "@template/ts-configs/base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
       "@template/contracts": ["../../packages/contracts/src"],

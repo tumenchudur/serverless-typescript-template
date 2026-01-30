@@ -6,8 +6,8 @@ vi.mock('../logging/logger', () => ({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
-    error: vi.fn(),
-  },
+    error: vi.fn()
+  }
 }));
 
 describe('ssm-cache', () => {

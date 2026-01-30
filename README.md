@@ -37,6 +37,7 @@ pnpm run test
 ## Documentation
 
 📚 **Complete Guides:**
+
 - **[EXAMPLES.md](./EXAMPLES.md)** - Comprehensive code examples for all features (PostgreSQL, DynamoDB, Axios, SSM, Lambda, testing, etc.)
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture, design patterns, and best practices
 
@@ -136,11 +137,13 @@ serverless-ts-template/
 1. **Clone or use this template**
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your database credentials
@@ -156,16 +159,19 @@ serverless-ts-template/
 ### PostgreSQL (Drizzle ORM)
 
 1. **Create a PostgreSQL database**
+
    ```bash
    createdb template_db
    ```
 
 2. **Generate migrations**
+
    ```bash
    pnpm run db:generate
    ```
 
 3. **Run migrations**
+
    ```bash
    pnpm run db:migrate
    ```
@@ -251,16 +257,19 @@ pnpm run format:check
 ### Deploy to AWS
 
 **Deploy all stacks:**
+
 ```bash
 ./scripts/deploy.sh prod
 ```
 
 **Deploy specific stack:**
+
 ```bash
 ./scripts/deploy.sh prod api-users
 ```
 
 **Deploy to dev environment:**
+
 ```bash
 ./scripts/deploy.sh dev api-users
 ```
@@ -329,6 +338,7 @@ logger.error('Failed to process request', error);
 ### Database Operations
 
 **PostgreSQL (Drizzle):**
+
 ```typescript
 import { db } from '@template/libs';
 import { users } from '@template/contracts';
@@ -345,6 +355,7 @@ const [updated] = await db.update(users).set(data).where(eq(users.id, userId)).r
 ```
 
 **DynamoDB:**
+
 ```typescript
 import { createRecord, queryRecords, getRecordByKey } from '@template/libs';
 
@@ -487,6 +498,7 @@ pnpm run db:studio     # Open Drizzle Studio
 ### Build Errors
 
 If you encounter TypeScript errors, ensure all dependencies are installed:
+
 ```bash
 pnpm install
 pnpm run build

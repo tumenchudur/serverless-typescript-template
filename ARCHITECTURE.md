@@ -112,6 +112,7 @@ stacks/
 ```
 
 **Benefits:**
+
 - Clear separation of concerns
 - Easy to test each layer independently
 - Business logic isolated from infrastructure
@@ -179,6 +180,7 @@ export const db = new Proxy({} as PostgresJsDatabase, {
 ```
 
 **Benefits:**
+
 - Faster Lambda cold starts
 - Connections reused across invocations
 - Environment variables validated at runtime
@@ -256,12 +258,14 @@ Authorization: Headers validated per endpoint
 ### Database Configuration
 
 **PostgreSQL via Drizzle:**
+
 - Connection pooling: max 1 (Lambda best practice)
 - Lazy initialization
 - Transaction support
 - Migration system
 
 **DynamoDB:**
+
 - Pay-per-request billing (no provisioned capacity)
 - On-demand scaling
 - Streams enabled for change data capture
@@ -350,6 +354,7 @@ logger.info('Operation completed', {
 ```
 
 **CloudWatch Integration:**
+
 - Automatic log collection
 - 365-day retention
 - Searchable with CloudWatch Insights
@@ -373,11 +378,13 @@ logger.info('Operation completed', {
 ### Database Scaling
 
 **PostgreSQL:**
+
 - Use RDS Proxy for connection pooling
 - Read replicas for read-heavy workloads
 - Aurora Serverless for auto-scaling
 
 **DynamoDB:**
+
 - Partition key design for even distribution
 - GSIs for additional query patterns
 - DynamoDB Streams for event processing
@@ -397,16 +404,19 @@ logger.info('Operation completed', {
 ```
 
 **Unit Tests:**
+
 - Mock all external dependencies
 - Test business logic
 - Fast, isolated
 
 **Integration Tests:**
+
 - Real database connections
 - Test repository layer
 - Use test database
 
 **E2E Tests:**
+
 - Full API flow
 - Deployed to test environment
 - Critical user journeys
@@ -420,6 +430,7 @@ dev → staging → prod
 ```
 
 **Configuration:**
+
 - Environment-specific SSM parameters
 - Stage-based resource naming
 - Region-specific deployments
@@ -623,6 +634,7 @@ export const twilioClient = new TwilioClient();
 ```
 
 **Benefits:**
+
 - **SSM Integration**: API keys stored securely and cached efficiently
 - **Automatic Retry**: Built-in retry logic for transient failures
 - **Error Handling**: Errors automatically converted to CustomError with proper status codes
@@ -699,6 +711,7 @@ const user = await db.select().from(users).where(eq(users.email, email));
 ### Authentication & Authorization
 
 Ready for:
+
 - AWS Cognito integration
 - JWT verification middleware
 - API keys
@@ -751,11 +764,13 @@ headers: {
 ### Database Resilience
 
 **PostgreSQL:**
+
 - Multi-AZ RDS deployment
 - Automated backups
 - Point-in-time recovery
 
 **DynamoDB:**
+
 - Multi-AZ replication (automatic)
 - Point-in-time recovery (enable in production)
 - Global tables (for multi-region)
@@ -862,13 +877,13 @@ aws logs filter-pattern /aws/lambda/template-api-users-prod-createUser --filter-
 
 Expected performance (approximate):
 
-| Metric | Target | Notes |
-|--------|--------|-------|
-| Cold Start | < 1s | ARM64 with minimal deps |
-| Warm Latency | < 100ms | Without DB query |
-| DB Query | < 50ms | PostgreSQL with indexes |
-| Build Time | < 30s | Full monorepo with cache |
-| Test Suite | < 5s | All unit tests |
+| Metric       | Target  | Notes                    |
+| ------------ | ------- | ------------------------ |
+| Cold Start   | < 1s    | ARM64 with minimal deps  |
+| Warm Latency | < 100ms | Without DB query         |
+| DB Query     | < 50ms  | PostgreSQL with indexes  |
+| Build Time   | < 30s   | Full monorepo with cache |
+| Test Suite   | < 5s    | All unit tests           |
 
 ## Future Improvements
 

@@ -8,7 +8,7 @@ import {
   DescribeParametersCommand,
   GetParametersByPathCommand,
   type Tag,
-  type ParameterStringFilter,
+  type ParameterStringFilter
 } from '@aws-sdk/client-ssm';
 import { logger } from '../utils/logger';
 import { CustomError } from '../errors/custom-error';
@@ -17,7 +17,7 @@ import type {
   SSMParameterOptions,
   SSMPutParameterOptions,
   SSMListParametersOptions,
-  SSMGetParametersByPathOptions,
+  SSMGetParametersByPathOptions
 } from './ssm-types';
 
 const ssmClient = new SSMClient({ region: process.env['AWS_REGION'] || 'ap-southeast-1' });
@@ -43,14 +43,10 @@ const MAX_BATCH_SIZE = 10;
  * const config = await getSSMParameter('/app/config', { withDecryption: false, cacheTTL: 300 });
  * ```
  */
-export async function getSSMParameter(
-  name: string,
-  options: SSMParameterOptions | boolean = true
-): Promise<string> {
+export async function getSSMParameter(name: string, options: SSMParameterOptions | boolean = true): Promise<string> {
   try {
     // Support backward compatibility with boolean parameter
-    const opts: SSMParameterOptions =
-      typeof options === 'boolean' ? { withDecryption: options } : options;
+    const opts: SSMParameterOptions = typeof options === 'boolean' ? { withDecryption: options } : options;
 
     const { withDecryption = true, cacheTTL = 0 } = opts;
 
@@ -67,16 +63,12 @@ export async function getSSMParameter(
     const result = await ssmClient.send(
       new GetParameterCommand({
         Name: name,
-        WithDecryption: withDecryption,
+        WithDecryption: withDecryption
       })
     );
 
     if (!result.Parameter?.Value) {
-      throw new CustomError(
-        `SSM parameter ${name} not found or has no value`,
-        404,
-        'SSM_PARAMETER_NOT_FOUND'
-      );
+      throw new CustomError(`SSM parameter ${name} not found or has no value`, 404, 'SSM_PARAMETER_NOT_FOUND');
     }
 
     const value = result.Parameter.Value;
@@ -94,11 +86,7 @@ export async function getSSMParameter(
     }
 
     logger.error('Error getting SSM parameter', { name, error });
-    throw new CustomError(
-      `Failed to retrieve SSM parameter: ${name}`,
-      500,
-      'SSM_GET_ERROR'
-    );
+    throw new CustomError(`Failed to retrieve SSM parameter: ${name}`, 500, 'SSM_GET_ERROR');
   }
 }
 
@@ -158,7 +146,7 @@ export async function getSSMParameters(
     logger.debug('Getting SSM parameters in batches', {
       total: namesToFetch.length,
       chunks: chunks.length,
-      withDecryption,
+      withDecryption
     });
 
     // Fetch each chunk
@@ -166,7 +154,7 @@ export async function getSSMParameters(
       const response = await ssmClient.send(
         new GetParametersCommand({
           Names: chunk,
-          WithDecryption: withDecryption,
+          WithDecryption: withDecryption
         })
       );
 
@@ -194,11 +182,7 @@ export async function getSSMParameters(
     return result;
   } catch (error) {
     logger.error('Error getting SSM parameters', { names, error });
-    throw new CustomError(
-      'Failed to retrieve SSM parameters',
-      500,
-      'SSM_BATCH_GET_ERROR'
-    );
+    throw new CustomError('Failed to retrieve SSM parameters', 500, 'SSM_BATCH_GET_ERROR');
   }
 }
 
@@ -226,19 +210,11 @@ export async function putSSMParameter(
   options: SSMPutParameterOptions = {}
 ): Promise<number> {
   try {
-    const {
-      description,
-      type = 'String',
-      overwrite = true,
-      tags,
-      tier = 'Standard',
-    } = options;
+    const { description, type = 'String', overwrite = true, tags, tier = 'Standard' } = options;
 
     logger.debug('Putting SSM parameter', { name, type, overwrite, tier });
 
-    const tagList: Tag[] | undefined = tags
-      ? Object.entries(tags).map(([Key, Value]) => ({ Key, Value }))
-      : undefined;
+    const tagList: Tag[] | undefined = tags ? Object.entries(tags).map(([Key, Value]) => ({ Key, Value })) : undefined;
 
     const result = await ssmClient.send(
       new PutParameterCommand({
@@ -248,7 +224,7 @@ export async function putSSMParameter(
         Description: description,
         Overwrite: overwrite,
         Tags: tagList,
-        Tier: tier,
+        Tier: tier
       })
     );
 
@@ -259,11 +235,7 @@ export async function putSSMParameter(
     return result.Version || 1;
   } catch (error) {
     logger.error('Error putting SSM parameter', { name, error });
-    throw new CustomError(
-      `Failed to put SSM parameter: ${name}`,
-      500,
-      'SSM_PUT_ERROR'
-    );
+    throw new CustomError(`Failed to put SSM parameter: ${name}`, 500, 'SSM_PUT_ERROR');
   }
 }
 
@@ -283,7 +255,7 @@ export async function deleteSSMParameter(name: string): Promise<void> {
 
     await ssmClient.send(
       new DeleteParameterCommand({
-        Name: name,
+        Name: name
       })
     );
 
@@ -293,11 +265,7 @@ export async function deleteSSMParameter(name: string): Promise<void> {
     logger.info('Deleted SSM parameter', { name });
   } catch (error) {
     logger.error('Error deleting SSM parameter', { name, error });
-    throw new CustomError(
-      `Failed to delete SSM parameter: ${name}`,
-      500,
-      'SSM_DELETE_ERROR'
-    );
+    throw new CustomError(`Failed to delete SSM parameter: ${name}`, 500, 'SSM_DELETE_ERROR');
   }
 }
 
@@ -325,14 +293,14 @@ export async function deleteSSMParameters(names: string[]): Promise<void> {
 
     logger.debug('Deleting SSM parameters in batches', {
       total: names.length,
-      chunks: chunks.length,
+      chunks: chunks.length
     });
 
     // Delete each chunk
     for (const chunk of chunks) {
       const result = await ssmClient.send(
         new DeleteParametersCommand({
-          Names: chunk,
+          Names: chunk
         })
       );
 
@@ -346,7 +314,7 @@ export async function deleteSSMParameters(names: string[]): Promise<void> {
       // Log invalid parameters
       if (result.InvalidParameters && result.InvalidParameters.length > 0) {
         logger.warn('Invalid SSM parameters for deletion', {
-          invalidParameters: result.InvalidParameters,
+          invalidParameters: result.InvalidParameters
         });
       }
     }
@@ -354,11 +322,7 @@ export async function deleteSSMParameters(names: string[]): Promise<void> {
     logger.info('Deleted SSM parameters', { count: names.length });
   } catch (error) {
     logger.error('Error deleting SSM parameters', { names, error });
-    throw new CustomError(
-      'Failed to delete SSM parameters',
-      500,
-      'SSM_BATCH_DELETE_ERROR'
-    );
+    throw new CustomError('Failed to delete SSM parameters', 500, 'SSM_BATCH_DELETE_ERROR');
   }
 }
 
@@ -394,14 +358,14 @@ export async function listSSMParameters(options: SSMListParametersOptions = {}):
 
     const parameterFilters: ParameterStringFilter[] | undefined = filters?.map((f) => ({
       Key: f.key,
-      Values: f.values,
+      Values: f.values
     }));
 
     const result = await ssmClient.send(
       new DescribeParametersCommand({
         MaxResults: maxResults,
         NextToken: nextToken,
-        ParameterFilters: parameterFilters,
+        ParameterFilters: parameterFilters
       })
     );
 
@@ -410,18 +374,14 @@ export async function listSSMParameters(options: SSMListParametersOptions = {}):
         name: p.Name || '',
         type: p.Type || '',
         lastModifiedDate: p.LastModifiedDate,
-        description: p.Description,
+        description: p.Description
       })) || [];
 
     logger.info('Listed SSM parameters', { count: parameters.length });
     return parameters;
   } catch (error) {
     logger.error('Error listing SSM parameters', { error });
-    throw new CustomError(
-      'Failed to list SSM parameters',
-      500,
-      'SSM_LIST_ERROR'
-    );
+    throw new CustomError('Failed to list SSM parameters', 500, 'SSM_LIST_ERROR');
   }
 }
 
@@ -446,12 +406,7 @@ export async function getSSMParametersByPath(
   options: SSMGetParametersByPathOptions = {}
 ): Promise<Map<string, string>> {
   try {
-    const {
-      recursive = false,
-      withDecryption = true,
-      maxResults = 10,
-      nextToken,
-    } = options;
+    const { recursive = false, withDecryption = true, maxResults = 10, nextToken } = options;
 
     logger.debug('Getting SSM parameters by path', { path, recursive, withDecryption });
 
@@ -461,7 +416,7 @@ export async function getSSMParametersByPath(
         Recursive: recursive,
         WithDecryption: withDecryption,
         MaxResults: maxResults,
-        NextToken: nextToken,
+        NextToken: nextToken
       })
     );
 
@@ -478,17 +433,13 @@ export async function getSSMParametersByPath(
     logger.info('Retrieved SSM parameters by path', {
       path,
       count: parameters.size,
-      hasMore: !!result.NextToken,
+      hasMore: !!result.NextToken
     });
 
     return parameters;
   } catch (error) {
     logger.error('Error getting SSM parameters by path', { path, error });
-    throw new CustomError(
-      `Failed to retrieve SSM parameters by path: ${path}`,
-      500,
-      'SSM_GET_BY_PATH_ERROR'
-    );
+    throw new CustomError(`Failed to retrieve SSM parameters by path: ${path}`, 500, 'SSM_GET_BY_PATH_ERROR');
   }
 }
 
