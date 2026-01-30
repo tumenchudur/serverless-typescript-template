@@ -270,35 +270,333 @@ export const handler = createHttpHandler<RequestSchema>(async (event) => {
 
 ## Authentication
 
-### JWT Verification Example
+This template uses AWS Cognito User Pools for authentication. The authentication system provides three levels:
+
+1. **Public** - No authentication required
+2. **User Authentication** - Requires valid Cognito user token
+3. **Admin Authentication** - Requires valid Cognito admin token + permission verification
+
+### Architecture
+
+- **API Gateway Cognito Authorizers** - Validate JWT signature and expiration
+- **Token Decoding** - Extract user identity (sub, email) from validated tokens
+- **Permission Verification** - Fine-grained access control via separate Lambda function
+
+### Setting Up Cognito Authorizer Configurations
 
 ```typescript
-import jwt from 'jsonwebtoken';
-import { UnauthorizedError } from '@template/libs';
+// stacks/api-users/src/config/auth.ts
+import { createUserAuthConfig, createAdminAuthConfig } from '@template/libs';
 
-export function verifyToken(token: string): { userId: string } {
-  try {
-    const decoded = jwt.verify(token, process.env['JWT_SECRET'] || '') as { userId: string };
-    return decoded;
-  } catch (error) {
-    throw new UnauthorizedError('Invalid or expired token');
+// User pool configuration
+export const userAuthConfig = createUserAuthConfig(
+  'arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_UserPool',
+  {
+    authorizerName: 'my-app-users',
+    cors: {
+      origin: 'https://app.example.com',
+      headers: ['Content-Type', 'Authorization']
+    }
   }
-}
+);
 
-// Use in handler
-export const handler = createHttpHandler<null>(async (event) => {
-  const authHeader = event.headers['authorization'] || event.headers['Authorization'];
-  if (!authHeader) {
-    throw new UnauthorizedError('Missing authorization header');
+// Admin pool configuration
+export const adminAuthConfig = createAdminAuthConfig(
+  'arn:aws:cognito-idp:us-east-1:123456789012:userpool/us-east-1_AdminPool',
+  {
+    authorizerName: 'my-app-admins',
+    cors: {
+      origin: 'https://admin.example.com',
+      headers: ['Content-Type', 'Authorization', 'Permission']
+    }
   }
+);
+```
 
-  const token = authHeader.replace('Bearer ', '');
-  const { userId } = verifyToken(token);
+### User Authentication Endpoints
 
-  // Use userId for authorization
-  const user = await getUser(userId);
-  return { data: user };
+**Define the function with Cognito authorizer:**
+
+```typescript
+// stacks/api-users/src/functions/index.ts
+import { createUserAuthApiFunc } from '@template/libs';
+import { userAuthConfig } from '../config/auth';
+
+export const USER_FUNCTIONS = {
+  getProfile: createUserAuthApiFunc({
+    dir: __dirname,
+    fnName: 'get-profile/handler.getProfileHandler',
+    http: { method: 'get', path: '/v1/profile' },
+    authConfig: userAuthConfig // API Gateway validates JWT
+  }),
+
+  updateProfile: createUserAuthApiFunc({
+    dir: __dirname,
+    fnName: 'update-profile/handler.updateProfileHandler',
+    http: { method: 'put', path: '/v1/profile' },
+    authConfig: userAuthConfig
+  })
+};
+```
+
+**Extract authenticated user information in handler:**
+
+```typescript
+// stacks/api-users/src/functions/get-profile/handler.ts
+import { createHttpHandler, extractMetadataAndAuthorizationFromEvent } from '@template/libs';
+import { getUserProfile } from '../../services/user.service';
+
+export const getProfileHandler = createHttpHandler<null>(async (event) => {
+  // Extract user identity from validated Cognito token
+  const { sub, email, ipAddress } = extractMetadataAndAuthorizationFromEvent(event);
+
+  // Use sub (user ID) for authorization
+  const profile = await getUserProfile(sub);
+
+  return {
+    message: 'Profile retrieved successfully',
+    data: {
+      ...profile,
+      email, // From token
+      requestIp: ipAddress
+    }
+  };
 });
+```
+
+### Admin Authentication with Permissions
+
+**Define admin function:**
+
+```typescript
+// stacks/admin-users/src/functions/index.ts
+import { createAdminAuthApiFunc } from '@template/libs';
+import { adminAuthConfig } from '../config/auth';
+
+export const ADMIN_FUNCTIONS = {
+  deleteUser: createAdminAuthApiFunc({
+    dir: __dirname,
+    fnName: 'delete-user/handler.deleteUserHandler',
+    http: { method: 'delete', path: '/admin/users/{userId}' },
+    authConfig: adminAuthConfig // Requires Authorization + Permission headers
+  }),
+
+  updateUserRole: createAdminAuthApiFunc({
+    dir: __dirname,
+    fnName: 'update-role/handler.updateRoleHandler',
+    http: { method: 'put', path: '/admin/users/{userId}/role' },
+    authConfig: adminAuthConfig
+  })
+};
+```
+
+**Verify permissions in handler:**
+
+```typescript
+// stacks/admin-users/src/functions/delete-user/handler.ts
+import {
+  createHttpHandler,
+  extractMetadataAndAuthorizationForAdminFromEvent,
+  verifyPermission
+} from '@template/libs';
+import { deleteUserById } from '../../services/user.service';
+
+export const deleteUserHandler = createHttpHandler<null>(async (event) => {
+  // Extract admin identity and permission token
+  const { sub, email, permission, ipAddress } = extractMetadataAndAuthorizationForAdminFromEvent(event);
+
+  // Verify admin has required permissions
+  await verifyPermission(permission, ['admin:users:delete', 'admin:users:manage']);
+
+  const userId = event.pathParameters?.userId;
+  if (!userId) {
+    throw new CustomError('User ID is required', 400);
+  }
+
+  await deleteUserById(userId);
+
+  return {
+    message: `User ${userId} deleted successfully by admin ${email}`,
+    data: { deletedBy: sub, deletedAt: new Date().toISOString() }
+  };
+});
+```
+
+### Permission Verification Setup
+
+**Configure permission verification Lambda:**
+
+```typescript
+// serverless.ts
+export default {
+  service: 'my-app',
+  provider: {
+    name: 'aws',
+    runtime: 'nodejs22.x',
+    environment: {
+      // Point to your permission verification Lambda
+      PERMISSION_VERIFICATION_FUNCTION: '${self:service}-${sls:stage}-verifyPermission'
+    }
+  }
+  // ... rest of config
+};
+```
+
+**Permission verification Lambda (separate stack):**
+
+```typescript
+// stacks/admin-auth/src/functions/verify-permission/handler.ts
+import { createHttpHandler } from '@template/libs';
+import type { PermissionVerificationResponse } from '@template/libs';
+
+export const verifyPermissionHandler = createHttpHandler<{
+  token: string;
+  requiredPermission: string[];
+}>(async (event) => {
+  const { token, requiredPermission } = event.body;
+
+  // Decode permission token and check permissions
+  const hasPermissions = await checkPermissions(token, requiredPermission);
+
+  const response: PermissionVerificationResponse = {
+    isAuthorized: hasPermissions,
+    response: {
+      message: hasPermissions ? 'Authorized' : 'Insufficient permissions',
+      statusCode: hasPermissions ? 200 : 403
+    }
+  };
+
+  return response;
+});
+```
+
+### Silent Permission Checks
+
+**Optional permission checks without throwing errors:**
+
+```typescript
+import {
+  extractMetadataAndAuthorizationForAdminFromEvent,
+  verifyPermissionSilent
+} from '@template/libs';
+
+export const getReportHandler = createHttpHandler<null>(async (event) => {
+  const { sub, permission } = extractMetadataAndAuthorizationForAdminFromEvent(event);
+
+  const report = await getBasicReport();
+
+  // Check if admin has access to detailed data
+  const hasDetailedAccess = await verifyPermissionSilent(permission, ['admin:reports:detailed']);
+
+  if (hasDetailedAccess) {
+    report.detailedMetrics = await getDetailedMetrics();
+  }
+
+  return { data: report };
+});
+```
+
+### Extracting Metadata Without Authentication
+
+**For public endpoints that optionally use auth:**
+
+```typescript
+import { extractMetadataFromEvent } from '@template/libs';
+
+export const publicHandler = createHttpHandler<null>(async (event) => {
+  // Extract metadata (token is optional)
+  const { token, ipAddress, headers } = extractMetadataFromEvent(event);
+
+  let userId: string | undefined;
+
+  if (token) {
+    try {
+      const decoded = jwt.decode(token, { json: true });
+      userId = decoded?.sub;
+    } catch (error) {
+      // Token invalid but endpoint is public, continue without auth
+    }
+  }
+
+  const data = await getPublicData(userId);
+
+  return { data };
+});
+```
+
+### Testing Authentication
+
+**Mock authenticated events:**
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import type { APIGatewayProxyEventV2 } from 'aws-lambda';
+
+const createAuthenticatedEvent = (userId: string, email: string): Partial<APIGatewayProxyEventV2> => {
+  const token = jwt.sign(
+    {
+      sub: userId,
+      email,
+      'cognito:username': 'testuser',
+      email_verified: true,
+      iss: 'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test',
+      aud: 'test-client-id',
+      token_use: 'id',
+      auth_time: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      iat: Math.floor(Date.now() / 1000),
+      jti: 'test-jti-id'
+    },
+    'test-secret'
+  );
+
+  return {
+    headers: {
+      authorization: `Bearer ${token}`
+    },
+    requestContext: {
+      http: { sourceIp: '192.168.1.1' }
+    } as any
+  };
+};
+
+describe('getProfileHandler', () => {
+  it('should return user profile', async () => {
+    const event = createAuthenticatedEvent('user-123', 'test@example.com');
+    const result = await getProfileHandler(event as any);
+
+    expect(result.statusCode).toBe(200);
+    expect(result.body).toContain('user-123');
+  });
+});
+```
+
+### Environment-Specific Configuration
+
+**Use different Cognito pools per environment:**
+
+```typescript
+// config/cognito.ts
+const COGNITO_POOLS = {
+  dev: {
+    userPoolArn: 'arn:aws:cognito-idp:us-east-1:123:userpool/us-east-1_DevUsers',
+    adminPoolArn: 'arn:aws:cognito-idp:us-east-1:123:userpool/us-east-1_DevAdmins'
+  },
+  staging: {
+    userPoolArn: 'arn:aws:cognito-idp:us-east-1:123:userpool/us-east-1_StagingUsers',
+    adminPoolArn: 'arn:aws:cognito-idp:us-east-1:123:userpool/us-east-1_StagingAdmins'
+  },
+  prod: {
+    userPoolArn: 'arn:aws:cognito-idp:us-east-1:123:userpool/us-east-1_ProdUsers',
+    adminPoolArn: 'arn:aws:cognito-idp:us-east-1:123:userpool/us-east-1_ProdAdmins'
+  }
+};
+
+const stage = process.env['STAGE'] || 'dev';
+const pools = COGNITO_POOLS[stage];
+
+export const userAuthConfig = createUserAuthConfig(pools.userPoolArn);
+export const adminAuthConfig = createAdminAuthConfig(pools.adminPoolArn);
 ```
 
 ## Middleware

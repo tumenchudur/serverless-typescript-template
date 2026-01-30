@@ -1,3 +1,5 @@
+import type { ApiHeaderConfig } from '@template/contracts';
+
 export interface FuncParams {
   dir: string;
   fnName: string;
@@ -13,4 +15,8 @@ export interface ApiFuncParams {
     more?: Record<string, unknown>;
   };
   other?: Record<string, unknown>;
+}
+
+export interface ApiFuncWithAuthParams extends ApiFuncParams {
+  authConfig?: ApiHeaderConfig;
 }
