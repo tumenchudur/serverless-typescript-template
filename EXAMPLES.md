@@ -394,11 +394,7 @@ export const ADMIN_FUNCTIONS = {
 
 ```typescript
 // stacks/admin-users/src/functions/delete-user/handler.ts
-import {
-  createHttpHandler,
-  extractMetadataAndAuthorizationForAdminFromEvent,
-  verifyPermission
-} from '@template/libs';
+import { createHttpHandler, extractMetadataAndAuthorizationForAdminFromEvent, verifyPermission } from '@template/libs';
 import { deleteUserById } from '../../services/user.service';
 
 export const deleteUserHandler = createHttpHandler<null>(async (event) => {
@@ -475,10 +471,7 @@ export const verifyPermissionHandler = createHttpHandler<{
 **Optional permission checks without throwing errors:**
 
 ```typescript
-import {
-  extractMetadataAndAuthorizationForAdminFromEvent,
-  verifyPermissionSilent
-} from '@template/libs';
+import { extractMetadataAndAuthorizationForAdminFromEvent, verifyPermissionSilent } from '@template/libs';
 
 export const getReportHandler = createHttpHandler<null>(async (event) => {
   const { sub, permission } = extractMetadataAndAuthorizationForAdminFromEvent(event);

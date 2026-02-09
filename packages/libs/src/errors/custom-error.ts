@@ -37,3 +37,41 @@ export class ForbiddenError extends CustomError {
     Object.setPrototypeOf(this, ForbiddenError.prototype);
   }
 }
+
+export class ConflictError extends CustomError {
+  constructor(message: string = 'Resource already exists', key: string | null = null) {
+    super(message, 409, key);
+    Object.setPrototypeOf(this, ConflictError.prototype);
+  }
+}
+
+export class RateLimitError extends CustomError {
+  retryAfter: number | null;
+
+  constructor(message: string = 'Rate limit exceeded', retryAfter: number | null = null, key: string | null = null) {
+    super(message, 429, key);
+    this.retryAfter = retryAfter;
+    Object.setPrototypeOf(this, RateLimitError.prototype);
+  }
+}
+
+export class ServiceUnavailableError extends CustomError {
+  constructor(message: string = 'Service temporarily unavailable', key: string | null = null) {
+    super(message, 503, key);
+    Object.setPrototypeOf(this, ServiceUnavailableError.prototype);
+  }
+}
+
+export class BadGatewayError extends CustomError {
+  constructor(message: string = 'Bad gateway', key: string | null = null) {
+    super(message, 502, key);
+    Object.setPrototypeOf(this, BadGatewayError.prototype);
+  }
+}
+
+export class GatewayTimeoutError extends CustomError {
+  constructor(message: string = 'Gateway timeout', key: string | null = null) {
+    super(message, 504, key);
+    Object.setPrototypeOf(this, GatewayTimeoutError.prototype);
+  }
+}

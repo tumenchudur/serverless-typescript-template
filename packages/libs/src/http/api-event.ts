@@ -22,7 +22,8 @@ import { logger } from '../utils/logger';
  * ```
  */
 export function extractMetadataFromEvent(event: APIGatewayProxyEventV2): HttpEventMetadata {
-  const token = event.headers.authorization?.replace('Bearer ', '') || event.headers.Authorization?.replace('Bearer ', '');
+  const token =
+    event.headers.authorization?.replace('Bearer ', '') || event.headers.Authorization?.replace('Bearer ', '');
   const ipAddress = event.requestContext?.http?.sourceIp;
 
   return {
@@ -51,7 +52,8 @@ export function extractMetadataFromEvent(event: APIGatewayProxyEventV2): HttpEve
  * ```
  */
 export function extractMetadataAndAuthorizationFromEvent(event: APIGatewayProxyEventV2): HttpEventMetadataWithAuth {
-  const token = event.headers.authorization?.replace('Bearer ', '') || event.headers.Authorization?.replace('Bearer ', '');
+  const token =
+    event.headers.authorization?.replace('Bearer ', '') || event.headers.Authorization?.replace('Bearer ', '');
 
   if (!token) {
     logger.warn('Missing Authorization header');
@@ -108,7 +110,8 @@ export function extractMetadataAndAuthorizationFromEvent(event: APIGatewayProxyE
 export function extractMetadataAndAuthorizationForAdminFromEvent(
   event: APIGatewayProxyEventV2
 ): HttpEventMetadataWithAdminAuth {
-  const token = event.headers.authorization?.replace('Bearer ', '') || event.headers.Authorization?.replace('Bearer ', '');
+  const token =
+    event.headers.authorization?.replace('Bearer ', '') || event.headers.Authorization?.replace('Bearer ', '');
   const permission = event.headers.permission || event.headers.Permission;
 
   if (!token) {

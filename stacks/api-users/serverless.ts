@@ -27,8 +27,10 @@ const serverlessConfig: AWS = {
     environment: {
       STAGE: '${self:provider.stage}',
       REGION: '${self:provider.region}',
+      SERVICE_NAME: '${self:service}',
       DATABASE_URL: '${ssm:/${self:provider.stage}/app/database-url}',
-      LOG_LEVEL: 'info'
+      CORS_ORIGIN: '${self:custom.corsOrigin.${self:provider.stage}, self:custom.corsOrigin.default}',
+      LOG_LEVEL: '${self:custom.logLevel.${self:provider.stage}, self:custom.logLevel.default}'
     },
     vpc: {
       securityGroupIds: ['${ssm:/${self:provider.stage}/app/security-group-id}'],
@@ -56,6 +58,18 @@ const serverlessConfig: AWS = {
     individually: true
   },
   custom: {
+    corsOrigin: {
+      dev: '*',
+      staging: 'https://staging.example.com',
+      prod: 'https://example.com',
+      default: '*'
+    },
+    logLevel: {
+      dev: 'debug',
+      staging: 'info',
+      prod: 'info',
+      default: 'info'
+    },
     esbuild: {
       bundle: true,
       minify: false,
@@ -78,8 +92,10 @@ const serverlessConfig: AWS = {
           ResponseType: 'DEFAULT_4XX',
           RestApiId: { Ref: 'ApiGatewayRestApi' },
           ResponseParameters: {
-            'gatewayresponse.header.Access-Control-Allow-Origin': "'*'",
-            'gatewayresponse.header.Access-Control-Allow-Headers': "'*'"
+            'gatewayresponse.header.Access-Control-Allow-Origin':
+              "'${self:custom.corsOrigin.${self:provider.stage}, self:custom.corsOrigin.default}'",
+            'gatewayresponse.header.Access-Control-Allow-Headers':
+              "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,Permission'"
           }
         }
       },
@@ -89,8 +105,10 @@ const serverlessConfig: AWS = {
           ResponseType: 'DEFAULT_5XX',
           RestApiId: { Ref: 'ApiGatewayRestApi' },
           ResponseParameters: {
-            'gatewayresponse.header.Access-Control-Allow-Origin': "'*'",
-            'gatewayresponse.header.Access-Control-Allow-Headers': "'*'"
+            'gatewayresponse.header.Access-Control-Allow-Origin':
+              "'${self:custom.corsOrigin.${self:provider.stage}, self:custom.corsOrigin.default}'",
+            'gatewayresponse.header.Access-Control-Allow-Headers':
+              "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token,Permission'"
           }
         }
       }
