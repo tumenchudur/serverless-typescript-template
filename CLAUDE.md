@@ -323,7 +323,9 @@ const result = await withRetry(() => callExternalApi(), {
 
 ---
 
-## Repository Pattern
+## Repository Pattern (Function-Based)
+
+> **Why function-based?** Serverless is stateless. Functions are simpler, tree-shake better, and are easier to mock in tests. Avoid classes in Lambda.
 
 ### PostgreSQL (Drizzle)
 
@@ -342,13 +344,26 @@ export async function createUser(data: NewUser): Promise<User> {
   const [user] = await db.insert(users).values(data).returning();
   return user;
 }
+
+export async function updateUser(id: string, data: Partial<User>): Promise<User | undefined> {
+  const [user] = await db
+    .update(users)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(users.id, id))
+    .returning();
+  return user;
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  await db.delete(users).where(eq(users.id, id));
+}
 ```
 
 ### DynamoDB
 
 ```typescript
 // repository/order.repository.ts
-import { createRecord, queryRecords } from '@template/libs';
+import { createRecord, getRecord, queryRecords, updateRecord } from '@template/libs';
 import type { Order } from '@template/contracts';
 
 const TABLE = process.env.ORDERS_TABLE!;
@@ -358,6 +373,14 @@ export async function createOrder(order: Order): Promise<Order> {
   return order;
 }
 
+export async function getOrderById(userId: string, orderId: string): Promise<Order | undefined> {
+  const result = await getRecord<Order>({
+    tableName: TABLE,
+    key: { userId, orderId }
+  });
+  return result.item;
+}
+
 export async function getOrdersByUser(userId: string): Promise<Order[]> {
   const result = await queryRecords<Order>({
     tableName: TABLE,
@@ -365,18 +388,37 @@ export async function getOrdersByUser(userId: string): Promise<Order[]> {
   });
   return result.items;
 }
+
+export async function updateOrderStatus(userId: string, orderId: string, status: string): Promise<void> {
+  await updateRecord({
+    tableName: TABLE,
+    key: { userId, orderId },
+    item: { status, updatedAt: new Date().toISOString() }
+  });
+}
+```
+
+### Repository Index
+
+```typescript
+// repository/index.ts
+export * from './user.repository';
+export * from './order.repository';
 ```
 
 ---
 
-## Service Layer
+## Service Layer (Function-Based)
+
+> Services contain business logic. They call repositories and throw domain errors.
 
 ```typescript
 // services/order.service.ts
-import { NotFoundError, ConflictError, logger } from '@template/libs';
-import { orderRepository } from '../repository/order.repository';
+import { ValidationError, NotFoundError, logger } from '@template/libs';
+import { createOrder as createOrderInDb, getOrderById, updateOrderStatus } from '../repository/order.repository';
+import type { CreateOrderRequest, Order } from '@template/contracts';
 
-export async function createOrder(userId: string, request: CreateOrderRequest) {
+export async function createOrder(userId: string, request: CreateOrderRequest): Promise<Order> {
   logger.info('Creating order', { userId });
 
   // Business logic validation
@@ -384,15 +426,46 @@ export async function createOrder(userId: string, request: CreateOrderRequest) {
     throw new ValidationError('Quantity must be positive');
   }
 
-  const order = await orderRepository.create({
+  const order = await createOrderInDb({
     userId,
+    orderId: crypto.randomUUID(),
     ...request,
-    status: 'PENDING'
+    status: 'PENDING',
+    createdAt: new Date().toISOString()
   });
 
-  logger.info('Order created', { orderId: order.id });
+  logger.info('Order created', { orderId: order.orderId });
   return order;
 }
+
+export async function getOrder(userId: string, orderId: string): Promise<Order> {
+  const order = await getOrderById(userId, orderId);
+
+  if (!order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  return order;
+}
+
+export async function cancelOrder(userId: string, orderId: string): Promise<void> {
+  const order = await getOrder(userId, orderId);
+
+  if (order.status !== 'PENDING') {
+    throw new ValidationError('Only pending orders can be cancelled');
+  }
+
+  await updateOrderStatus(userId, orderId, 'CANCELLED');
+  logger.info('Order cancelled', { orderId });
+}
+```
+
+### Service Index
+
+```typescript
+// services/index.ts
+export * from './order.service';
+export * from './user.service';
 ```
 
 ---
@@ -510,6 +583,27 @@ pnpm run test -- --watch   # Watch mode
 
 ---
 
+## Layer Flow
+
+```
+Handler (handler.ts)
+    ↓ extracts auth, validates input
+Service Layer (services/*.ts)
+    ↓ business logic, validation
+Repository Layer (repository/*.ts)
+    ↓ data access
+Database (PostgreSQL/DynamoDB)
+```
+
+**Rules:**
+
+- Handlers call services, never repositories directly
+- Services contain business logic and call repositories
+- Repositories are pure data access (no business logic)
+- Errors bubble up and are caught by `createHttpHandler`
+
+---
+
 ## Common Mistakes to Avoid
 
 1. **Don't use `.js` extensions** in imports
@@ -518,6 +612,8 @@ pnpm run test -- --watch   # Watch mode
 4. **Don't use `z.record(z.unknown())`** - use `z.record(z.string(), z.unknown())`
 5. **Don't hardcode CORS to `*` in production** - use environment-specific config
 6. **Don't forget to set correlation ID** at request start for log tracing
+7. **Don't use classes for repositories/services** - use functions (better for serverless, tree-shaking, testing)
+8. **Don't call repositories from handlers** - always go through services
 
 ---
 
