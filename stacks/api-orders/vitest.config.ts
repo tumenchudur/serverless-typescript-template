@@ -1,12 +1,11 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import rootConfig from '../../vitest.config';
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    coverage: {
-      provider: 'v8',
-      exclude: ['node_modules/', 'dist/', '.serverless/', '**/*.config.ts']
+export default mergeConfig(
+  rootConfig,
+  defineConfig({
+    test: {
+      include: ['src/**/*.{test,spec}.ts']
     }
-  }
-});
+  })
+);
